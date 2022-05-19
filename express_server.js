@@ -36,8 +36,8 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
-
+  user = users[req.cookies["user_id"]]
+  const templateVars = { urls: urlDatabase, "user": user };
   res.render("urls_index", templateVars);
 });
 
@@ -81,7 +81,9 @@ app.post("/register", (req, res) => {
   const newUserID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-
+  if ( email === "" || password === "" ) {
+    res.sendStatus(400);
+  }
   users[newUserID] = {
     id: newUserID,
     email: email,
