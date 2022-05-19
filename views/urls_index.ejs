@@ -24,9 +24,14 @@
       </thead>
       <tbody>
         <% for(let url in urls) { %>
+          <% console.log("user", user) %>
+          <% console.log("urls", urls) %>
+          <% console.log("urls[url].userID", urls[url].userID) %>
+          <% console.log("user.id", user.id) %>
+          <% if(urls[url].userID == user.id) { %>
           <tr>
             <td><a href="localhost:8080/u/<%= url %>">localhost:8080/u/<%= url %></a></td>
-            <td><%= urls[url] %></td>
+            <td><%= urls[url].longURL %></td>
             <td><form method="GET" action="/urls/<%= url %>">
               <button type="submit" class="btn btn-primary">Edit</button>
             </form></td>
@@ -34,6 +39,7 @@
               <button type="submit" class="btn btn-primary">Delete</button>
             </form></td>
           </tr>
+          <% } %>
         <% } %>
       </tbody>
     </table>
