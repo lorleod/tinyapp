@@ -24,12 +24,36 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  emailAlreadyExists: function (email) {
+    for (const user in this) {
+      if (this[user].email === email) {
+        return true;
+      }
+    }
+    return false;
+  },
+  passwordsMatch: function (email, password) {
+    for (const user in this) {
+      if (this[user].email === email) {
+        if (this[user].password === password) {
+          return true;
+        }
+      }
+    }
+    return false;
+  },
+  userIdFromEmail: function (email) {
+    for (const user in this) {
+      if (this[user].email === email) {
+        return this[user].id;
+      }
+    }
   }
 }
 
 app.get("/", (req, res) => {
   const templateVars = {
-    //  username: req.cookies["username"]
   };
 
   res.render("/urls", templateVars);
@@ -42,17 +66,17 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  console.log("URL database", urlDatabase);
+  //console.log("URL database", urlDatabase);
   //console.log("REQ.params.shortURL: " + req.params.shortURL);
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
-  console.log(longURL);
+  //console.log(longURL);
   res.redirect(longURL);
 });
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies["username"],
+    user_id: req.cookies["user_id"],
   };
 
   res.render("urls_new", templateVars);
@@ -64,14 +88,14 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: shortURL,
     longURL: urlDatabase[shortURL],
-    username: req.cookies["username"],
+    user_id: req.cookies["user_id"],
   };
   res.render("urls_show", templateVars);
 });
 
 app.get("/register", (req, res) => {
   const templateVars = {
-    username: req.cookies["user_id"],
+    user: req.cookies["user_id"],
   };
   res.render('register', templateVars);
 });
@@ -83,21 +107,40 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
   if ( email === "" || password === "" ) {
     res.sendStatus(400);
-  }
+    return;
+  } else if (users.emailAlreadyExists(email)) {
+    res.sendStatus(400);
+    return;
+  };
+
   users[newUserID] = {
     id: newUserID,
     email: email,
     password: password
   }
-  console.log(users);
+  //console.log(users);
   res.cookie("user_id", newUserID);
   res.redirect("/urls");
 });
 
+app.get("/login", (req, res) => {
+  res.render('login');
+});
+
 app.post("/login", (req, res) => {
   // long URL from form
-  const username = req.body.username;
-  res.cookie("username", username);
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!users.emailAlreadyExists(email)) {
+    res.sendStatus(403);
+    return;
+  } else if (!users.passwordsMatch(email, password)) {
+    res.sendStatus(403);
+    return;
+  }
+
+  const user_id = users.userIdFromEmail(email);
+  res.cookie("user_id", user_id);
   res.redirect("/urls");
 });
 
