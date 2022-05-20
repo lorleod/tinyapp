@@ -4,8 +4,9 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["screenshot description"](#)
-!["screenshot description"](#)
+!["Saved URLs"](https://github.com/lorleod/tinyapp/blob/master/docs/saved-urls.png)
+!["Redirect if not logged in""](https://github.com/lorleod/tinyapp/blob/master/docs/login-reg-redirect.png?raw=true)
+!["Create a new TinyURL"](https://github.com/lorleod/tinyapp/blob/master/docs/create-new-tinyurl.png?raw=true)
 
 ## Dependencies
 
