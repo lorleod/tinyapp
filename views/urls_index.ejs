@@ -24,10 +24,6 @@
       </thead>
       <tbody>
         <% for(let url in urls) { %>
-          <% console.log("user", user) %>
-          <% console.log("urls", urls) %>
-          <% console.log("urls[url].userID", urls[url].userID) %>
-          <% console.log("user.id", user.id) %>
           <% if(urls[url].userID == user.id) { %>
           <tr>
             <td><a href="localhost:8080/u/<%= url %>">localhost:8080/u/<%= url %></a></td>

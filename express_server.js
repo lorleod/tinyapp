@@ -4,11 +4,11 @@ const res = require("express/lib/response");
 const cookieSession = require("cookie-session");
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { getUserByEmail } = require("helpers");
+const { getUserByEmail } = require("./helpers");
 const app = express();
 const PORT = 8080; // default port 8080
 
-// ??? what should I call this bit Middleware stuff
+// Middleware stuff
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
@@ -19,16 +19,7 @@ app.use(
 );
 
 // Database of all stored tinyURLs
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-  },
-};
+const urlDatabase = {};
 
 // Database of users
 const users = {
@@ -74,10 +65,18 @@ const generateRandomString = function () {
 
 // GET requests
 app.get("/", (req, res) => {
+  if (!req.session["user_id"]) {
+    res.redirect("/login");
+    return;
+  }
   res.redirect("/urls");
 });
 
 app.get("/register", (req, res) => {
+  if (req.session["user_id"]) {
+    res.redirect("/urls");
+    return;
+  }
   const templateVars = {
     user: req.session["user_id"],
   };
@@ -86,11 +85,14 @@ app.get("/register", (req, res) => {
 
 app.get("/login", (req, res) => {
   const user = users[req.session["user_id"]];
+  if (req.session["user_id"]) {
+    res.redirect("/urls");
+    return;
+  }
   const templateVars = {
     user_id: req.session["user_id"],
     user: user,
   };
-
   res.render("login", templateVars);
 });
 
@@ -110,18 +112,6 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-
-  if (!urlDatabase[shortURL]) {
-    res.sendStatus(404);
-    return;
-  }
-
-  const longURL = urlDatabase[shortURL].longURL;
-  res.redirect(longURL);
-});
-
 app.get("/urls/new", (req, res) => {
   if (!req.session["user_id"]) {
     res.redirect("/login");
@@ -136,13 +126,15 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  if (!req.session["user_id"]) {
-    res.redirect("/login");
-    return;
-  }
-
   const shortURL = req.params.shortURL;
   const user = users[req.session["user_id"]];
+
+  if (!urlDatabase[shortURL]) {
+    res.send("Unauthorized Access");
+  } else if (req.session["user_id"] !== urlDatabase[shortURL].userID) {
+    res.send("Unauthorized Access");
+  }
+
   const templateVars = {
     shortURL: shortURL,
     longURL: urlDatabase[shortURL].longURL,
@@ -150,6 +142,18 @@ app.get("/urls/:shortURL", (req, res) => {
     user: user,
   };
   res.render("urls_show", templateVars);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+
+  if (!urlDatabase[shortURL]) {
+    res.send("<p>This TinyURL does not exist!</p>");
+    return;
+  }
+
+  const longURL = urlDatabase[shortURL].longURL;
+  res.redirect(longURL);
 });
 
 // POST requests
@@ -173,7 +177,6 @@ app.post("/register", (req, res) => {
     password: hash,
   };
 
-  console.log("Users databse: ", users);
   req.session.user_id = newUserID;
   res.redirect("/urls");
 });
@@ -183,7 +186,7 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hash = users.returnPassword(email);
-  //console.log("bcrypt.compareSync(password, hash): ", bcrypt.compareSync(password, hash))
+
   if (!users.emailAlreadyExists(email)) {
     res.send("<p>No user with that email</p>");
     return;
@@ -203,12 +206,11 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  if (!req.session["user_id"]) {
-    res.redirect("/login");
-    return;
-  }
-
   const shortURL = req.params.shortURL;
+
+  if (req.session["user_id"] !== urlDatabase[shortURL].userID) {
+    res.send("Unauthorized Access");
+  }
 
   // long URL from form
   const longURL = req.body.longURL;
@@ -233,15 +235,14 @@ app.post("/urls", (req, res) => {
     userID: req.session["user_id"],
   };
   res.redirect(`/urls/${shortURL}`);
-  //res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!req.session["user_id"]) {
-    res.redirect("/login");
-    return;
-  }
   const shortURL = req.params.shortURL;
+
+  if (req.session["user_id"] !== urlDatabase[shortURL].userID) {
+    res.send("Unauthorized Access");
+  }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
